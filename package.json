@@ -1,0 +1,31 @@
+{
+  "name": "@enalmada/next-secure",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "rm -rf dist && bun --bun tsc",
+    "release": "bun run build && bunx changeset publish"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@changesets/cli": "^2.26.2",
+    "typescript": "^5.2.2"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Adam Lane",
+  "description": "helpers for generating CSP and other security headers",
+  "keywords": [],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Enalmada/next-secure/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Enalmada/next-secure.git"
+  },
+  "homepage": "https://github.com/Enalmada/next-secure",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}
