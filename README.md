@@ -21,7 +21,7 @@ import * as nextSafe from 'next-safe';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-/** @type {import("next-secure").ContentSecurityPolicyTemplate} */
+/** @type {import("@enalmada/next-secure").ContentSecurityPolicyTemplate} */
 const cspConfig = {
     isDev,
     contentSecurityPolicy: {
@@ -43,7 +43,7 @@ const cspConfig = {
     permissionsPolicyDirectiveSupport: ['proposed', 'standard'], // default causes tons of console noise
 };
 
-/** @type {import("next-secure").CspRule[]} */
+/** @type {import("@enalmada/next-secure").CspRule[]} */
 // https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid#cross_origin_opener_policy
 const cspRules = [
     { description: 'react-dev', 'object-src': isDev ? 'data:' : undefined, source: '/:path*' },
@@ -77,7 +77,7 @@ const keysToRemove = ['Feature-Policy', 'X-Content-Security-Policy', 'X-WebKit-C
 const config = {
     async headers() {
         return contentSecurityPolicyTemplates.map(
-            (/** @type {import("next-secure").ContentSecurityPolicyTemplate } */ template) => {
+            (/** @type {import("@enalmada/next-secure").ContentSecurityPolicyTemplate } */ template) => {
                 return {
                     source: template.source || '/:path*',
                     headers: nextSafe
