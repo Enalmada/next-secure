@@ -110,3 +110,11 @@ const config = {
 
 [with-csp](https://nextjs.org/docs/pages/building-your-application/configuring/content-security-policy) next.js has had work in 13.5 to improve dynamic csp
 * unclear how static pages should be protected
+
+## Build Notes
+* Using [latest module and target settings](https://stackoverflow.com/questions/72380007/what-typescript-configuration-produces-output-closest-to-node-js-18-capabilities/72380008#72380008) for current LTS
+* using tsc for types until [bun support](https://github.com/oven-sh/bun/issues/5141#issuecomment-1727578701) comes around
+
+## Contribute
+Using [changesets](https://github.com/changesets/changesets) so please remember to run "changeset" with any PR.  
+Give consideration for the summary as it is what will show up in the changelog.
