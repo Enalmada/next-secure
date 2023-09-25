@@ -1,7 +1,7 @@
 await Bun.build({
     entrypoints: ['./src/index.ts'],
     outdir: './dist',
-    target: 'browser',
+    target: 'node',
     external: ['*'],
     root: './src',
 });
