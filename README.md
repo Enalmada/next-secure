@@ -13,18 +13,12 @@ bun add @enalmada/next-secure
 
 ## Usage
 
-
-### In middleware.ts
-
-
-
 ### In next.config.cjs
 
 ```ts
 // next.config.mjs
 // @ts-check
 
-import * as nextSafe from 'next-safe';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -35,7 +29,6 @@ const cspConfig = {
         mergeDefaultDirectives: true,
         'prefetch-src': false, // shouldn't be used
     },
-    // https://web.dev/referrer-best-practices/
     referrerPolicy: 'strict-origin-when-cross-origin',
     // These "false" are included in proposed/standard but cause chrome noise.  Disabling for now.
     permissionsPolicy: {
@@ -51,56 +44,28 @@ const cspConfig = {
 };
 
 /** @type {import("@enalmada/next-secure").CspRule[]} */
-// https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid#cross_origin_opener_policy
 const cspRules = [
-    { description: 'react-dev', 'object-src': isDev ? 'data:' : undefined, source: '/:path*' },
-    {
-        description: 'nextjs',
-        // NextJS requires 'unsafe-inline' in prod?!
-        // TODO - use nonce or hash.  next.js is working on improving this.  Revisit when they do.
-        'script-src': "'unsafe-inline'",
-        // https://github.com/vercel/next.js/issues/18557#issuecomment-727160210
-        'style-src': "'unsafe-inline'",
-        source: '/:path*',
-    },
-    {
-        description: 'graphiQL',
-        'style-src': 'https://unpkg.com/@graphql-yoga/',
-        'script-src': "'unsafe-inline' https://unpkg.com/@graphql-yoga/",
-        'font-src': 'data:',
-        'connect-src': 'https://unpkg.com',
-        'img-src': 'https://raw.githubusercontent.com',
-        source: '/api/graphql',
-    }
+  {
+    description: 'vercel',
+    'frame-src': 'https://vercel.live/',
+    'script-src': 'https://vercel.live/_next-live/feedback/',
+    source: '/:path*',
+  }
 ];
 
-const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules);
+const contentSecurityPolicyTemplates = generateCspTemplates(cspConfig, cspRules);
 
-// next-safe adds legacy keys that are unnecessary and cause console noise
-const keysToRemove = ['Feature-Policy', 'X-Content-Security-Policy', 'X-WebKit-CSP'];
-
-// noinspection JSUnusedLocalSymbols
 /** @type {import("next").NextConfig} */
-const config = {
-    async headers() {
-        return contentSecurityPolicyTemplates.map(
-            (/** @type {import("@enalmada/next-secure").ContentSecurityPolicyTemplate } */ template) => {
-                return {
-                    source: template.source || '/:path*',
-                    headers: nextSafe
-                        // @ts-ignore this works but typescript can't tell for some reason
-                        .default({ ...template })
-                        .filter((/** @type {{ key: string; }} */ header) => !keysToRemove.includes(header.key)),
-                };
-            }
-        );
-    },
-    ...
+const nextConfig = {
+
+  async headers() {
+    return [...contentSecurityPolicyTemplates];
+  },
+  ...
 }
 ```
 
 ## TODO
-[ ] move next-safe into module so header generation is completely abstracted 
 [ ] review [with-csp](https://nextjs.org/docs/pages/building-your-application/configuring/content-security-policy) and use in middleware vs next.config.mjs
 
 ## Alternatives
