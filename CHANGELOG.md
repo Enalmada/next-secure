@@ -1,5 +1,11 @@
 # @enalmada/next-secure
 
+## 0.2.0
+
+### Minor Changes
+
+- 5d4660c: support middleware and nonce
+
 ## 0.1.0
 
 ### Minor Changes
