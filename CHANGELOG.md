@@ -1,5 +1,11 @@
 # @enalmada/next-secure
 
+## 0.1.0
+
+### Minor Changes
+
+- d211a5f: move next-safe into library
+
 ## 0.0.4
 
 ### Patch Changes
