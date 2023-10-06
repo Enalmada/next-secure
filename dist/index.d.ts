@@ -1,4 +1,4 @@
-export declare const Default: NextSafeConfig;
+import { type NextResponse } from 'next/server';
 export interface CspRule {
     description?: string;
     source?: string;
@@ -38,8 +38,10 @@ export type SourceHeaders = {
     source: string;
     headers: string;
 };
-declare function generateCspTemplates(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[]): {
+declare function generateCspTemplates(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonce?: string): {
     source: string;
     headers: Header[];
 }[];
+export declare function generateSecurityHeaders(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonce?: string): Header[];
+export declare function applyHeaders(response: NextResponse, headers: Header[]): NextResponse;
 export { generateCspTemplates };

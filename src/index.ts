@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return */
+import { type NextResponse } from 'next/server';
 import * as nextSafe from 'next-safe';
 
 function deepMerge<T extends object, S extends object>(target: T, source: S): T & S {
@@ -31,37 +32,48 @@ function isObject(item: any): boolean {
 
 // default configuration https://trezy.gitbook.io/next-safe/usage/configuration
 
-export const Default: NextSafeConfig = {
-  contentTypeOptions: 'nosniff',
-  contentSecurityPolicy: {
-    'base-uri': "'none'",
-    'child-src': "'none'",
-    'connect-src': "'self'",
-    'default-src': "'self'",
-    'font-src': "'self'",
-    'form-action': "'self'",
-    'frame-ancestors': "'none'",
-    'frame-src': "'none'",
-    'img-src': "'self'",
-    'manifest-src': "'self'",
-    'media-src': "'self'",
-    'object-src': "'none'",
-    'prefetch-src': "'self'",
-    'script-src': "'self'",
-    'style-src': "'self'",
-    'worker-src': "'self'",
-    // @ts-ignore
-    'block-all-mixed-content': true,
-    // @ts-ignore
-    'upgrade-insecure-requests': true,
-    mergeDefaultDirectives: false,
-    reportOnly: false,
-  },
-  frameOptions: 'DENY',
-  permissionsPolicyDirectiveSupport: ['proposed', 'standard'],
-  isDev: false,
-  referrerPolicy: 'no-referrer',
-  xssProtection: '1; mode=block',
+type NextSafeConfigFunction = (isDev: boolean, nonce?: string) => NextSafeConfig;
+
+const getDefaultConfig: NextSafeConfigFunction = (isDev, nonce) => {
+  let scriptSrc = "'self'";
+  let styleSrc = "'self'";
+
+  if (isDev) {
+    scriptSrc += " 'unsafe-inline'";
+    styleSrc += " 'unsafe-inline'";
+  } else if (nonce) {
+    scriptSrc += ` 'nonce-${nonce}' 'strict-dynamic'`;
+    styleSrc += ` 'nonce-${nonce}'`;
+  }
+
+  return {
+    contentTypeOptions: 'nosniff',
+    contentSecurityPolicy: {
+      'base-uri': "'none'",
+      'child-src': "'none'",
+      'connect-src': "'self'",
+      'default-src': "'self'",
+      'font-src': "'self'",
+      'form-action': "'self'",
+      'frame-ancestors': "'none'",
+      'frame-src': "'none'",
+      'img-src': "'self'",
+      'manifest-src': "'self'",
+      'media-src': "'self'",
+      'object-src': "'none'",
+      'prefetch-src': "'self'",
+      'script-src': scriptSrc,
+      'style-src': styleSrc,
+      'worker-src': "'self'",
+      mergeDefaultDirectives: false,
+      reportOnly: false,
+    },
+    frameOptions: 'DENY',
+    permissionsPolicyDirectiveSupport: ['proposed', 'standard'],
+    isDev: false,
+    referrerPolicy: 'no-referrer',
+    xssProtection: '1; mode=block',
+  };
 };
 
 export interface CspRule {
@@ -101,10 +113,13 @@ export interface ContentSecurityPolicyTemplate {
   isDev: boolean;
 }
 
-function groupBySource(cspRules: CspRule[]): Record<string, CspRule[]> {
+function groupBySource(
+  cspRules: CspRule[],
+  ignorePath: boolean = false
+): Record<string, CspRule[]> {
   const grouped: Record<string, CspRule[]> = {};
   cspRules.forEach((rule) => {
-    const source = rule.source || '/';
+    const source = ignorePath ? '/' : rule.source || '/';
     if (!grouped[source]) {
       grouped[source] = [];
     }
@@ -115,13 +130,17 @@ function groupBySource(cspRules: CspRule[]): Record<string, CspRule[]> {
 
 function generateCspTemplate(
   cspConfig: ContentSecurityPolicyTemplate,
-  cspRules: CspRule[]
+  cspRules: CspRule[],
+  nonce?: string
 ): ContentSecurityPolicyTemplate[] {
-  const groupedRules = groupBySource(cspRules);
+  const groupedRules = groupBySource(cspRules, !!nonce);
   const finalConfigs: ContentSecurityPolicyTemplate[] = [];
 
   for (const [source, rules] of Object.entries(groupedRules)) {
-    const finalConfig: ContentSecurityPolicyTemplate = deepMerge(Default, cspConfig);
+    const finalConfig: ContentSecurityPolicyTemplate = deepMerge(
+      getDefaultConfig(cspConfig.isDev, nonce),
+      cspConfig
+    );
     const generatedCsp = { ...finalConfig.contentSecurityPolicy };
 
     rules.forEach((rule) => {
@@ -171,9 +190,10 @@ const defaultKeysToRemove = ['Feature-Policy', 'X-Content-Security-Policy', 'X-W
 function generateCspTemplates(
   cspConfig: ContentSecurityPolicyTemplate,
   cspRules: CspRule[],
-  keysToRemove: string[] = defaultKeysToRemove
+  keysToRemove: string[] = defaultKeysToRemove,
+  nonce?: string
 ) {
-  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules);
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonce);
 
   return contentSecurityPolicyTemplates.map((template: ContentSecurityPolicyTemplate) => {
     return {
@@ -187,5 +207,54 @@ function generateCspTemplates(
     };
   });
 }
+
+export function generateSecurityHeaders(
+  cspConfig: ContentSecurityPolicyTemplate,
+  cspRules: CspRule[],
+  keysToRemove: string[] = defaultKeysToRemove,
+  nonce?: string
+): Header[] {
+  if (!nonce) {
+    nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  }
+
+  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonce);
+
+  const headersFromTemplate = templates.shift()?.headers || [];
+
+  headersFromTemplate.push({ key: 'x-nonce', value: nonce });
+
+  return headersFromTemplate;
+}
+
+export function applyHeaders(response: NextResponse, headers: Header[]): NextResponse {
+  headers.forEach((header) => {
+    response.headers.set(header.key, header.value);
+  });
+
+  return response;
+}
+
+/*
+// pathname missing when spreading request
+export function generateSecureRequest(
+  cspConfig: ContentSecurityPolicyTemplate,
+  cspRules: CspRule[],
+  request: NextRequest
+): NextRequest {
+  const secureHeaders = generateSecurityHeaders(cspConfig, cspRules);
+
+  const requestHeaders = new Headers(request.headers);
+
+  secureHeaders.forEach((header: Header) => {
+    requestHeaders.set(header.key, header.value);
+  });
+
+  return {
+    ...request,
+    headers: requestHeaders,
+  } as NextRequest;
+}
+ */
 
 export { generateCspTemplates };
