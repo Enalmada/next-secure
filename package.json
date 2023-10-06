@@ -31,6 +31,9 @@
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
   },
+  "peerDependencies": {
+    "next": "^13.5.4"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Adam Lane",

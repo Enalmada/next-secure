@@ -13,14 +13,77 @@ bun add @enalmada/next-secure
 
 ## Usage
 
-### In next.config.cjs
+### In middleware
+
+1) Define your rules.  See [next-safe](https://github.com/trezy/next-safe) for config values
+```ts
+// cspRules.ts
+import { type ContentSecurityPolicyTemplate, type CspRule } from '@enalmada/next-secure';
+
+const isDev = process.env.NODE_ENV === 'development';
+
+export const cspConfig: ContentSecurityPolicyTemplate = {
+  isDev,
+  contentSecurityPolicy: {
+    mergeDefaultDirectives: true,
+    'prefetch-src': false, // shouldn't be used
+  },
+  // https://web.dev/referrer-best-practices/
+  referrerPolicy: 'strict-origin-when-cross-origin',
+  // These "false" are included in proposed/standard but cause chrome noise.  Disabling for now.
+  permissionsPolicy: {
+    'ambient-light-sensor': false,
+    battery: false,
+    'document-domain': false,
+    'execution-while-not-rendered': false,
+    'execution-while-out-of-viewport': false,
+    'navigation-override': false,
+    'speaker-selection': false,
+  },
+  permissionsPolicyDirectiveSupport: ['proposed', 'standard'], // default causes tons of console noise
+};
+
+export const cspRules: CspRule[] = [
+  { description: 'react-dev', 'object-src': isDev ? 'data:' : undefined, source: '/:path*' },
+  {
+    description: 'firebase',
+    'script-src': 'https://apis.google.com/ https://accounts.google.com/gsi/client',
+    'connect-src':
+            'https://apis.google.com https://accounts.google.com/gsi/ https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://lh3.googleusercontent.com',
+    'img-src': 'https://lh3.googleusercontent.com',
+    'frame-src': `https://accounts.google.com/gsi/ https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}/`,
+    source: '/:path*',
+  },
+  {
+    description: 'sentry',
+    'worker-src': 'blob:',
+    'connect-src': 'https://oxxxxx.ingest.sentry.io',
+    source: '/:path*',
+  },
+];
+```
+
+2) use `generateSecurityHeaders` to create headers and `applyHeaders` to add them to response.
+```ts
+
+import { applyHeaders, generateSecurityHeaders } from '@enalmada/next-secure';
+import { cspConfig, cspRules } from '@/cspRules';
+
+export async function middleware(request: NextRequest) {
+  const secureHeaders = generateSecurityHeaders(cspConfig, cspRules);
+  ...     
+  const result = NextResponse.next();  // or intlMiddleware(request); etc
+  return applyHeaders(result, secureHeaders);
+```
+
+### In next.config.cjs (deprecated)
 
 ```ts
 // next.config.mjs
 // @ts-check
 
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 /** @type {import("@enalmada/next-secure").ContentSecurityPolicyTemplate} */
 const cspConfig = {
