@@ -1,31 +1,4 @@
-export declare const Default: {
-    contentTypeOptions: string;
-    contentSecurityPolicy: {
-        'base-uri': string;
-        'child-src': string;
-        'connect-src': string;
-        'default-src': string;
-        'font-src': string;
-        'form-action': string;
-        'frame-ancestors': string;
-        'frame-src': string;
-        'img-src': string;
-        'manifest-src': string;
-        'media-src': string;
-        'object-src': string;
-        'prefetch-src': string;
-        'script-src': string;
-        'style-src': string;
-        'worker-src': string;
-        mergeDefaultDirectives: boolean;
-        reportOnly: boolean;
-    };
-    frameOptions: string;
-    permissionsPolicyDirectiveSupport: string[];
-    isDev: boolean;
-    referrerPolicy: string;
-    xssProtection: string;
-};
+export declare const Default: NextSafeConfig;
 export interface CspRule {
     description?: string;
     source?: string;
@@ -45,6 +18,8 @@ export interface CspRule {
     'default-src'?: string | boolean;
     'form-action'?: string | boolean;
     'frame-ancestors'?: string | boolean;
+    'block-all-mixed-content'?: boolean;
+    'upgrade-insecure-requests'?: boolean;
 }
 export interface ContentSecurityPolicyTemplate {
     source?: string;
@@ -59,5 +34,12 @@ export interface ContentSecurityPolicyTemplate {
     permissionsPolicyDirectiveSupport: any[];
     isDev: boolean;
 }
-declare function generateCspTemplate(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[]): ContentSecurityPolicyTemplate[];
-export { generateCspTemplate };
+export type SourceHeaders = {
+    source: string;
+    headers: string;
+};
+declare function generateCspTemplates(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[]): {
+    source: string;
+    headers: Header[];
+}[];
+export { generateCspTemplates };

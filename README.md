@@ -13,6 +13,13 @@ bun add @enalmada/next-secure
 
 ## Usage
 
+
+### In middleware.ts
+
+
+
+### In next.config.cjs
+
 ```ts
 // next.config.mjs
 // @ts-check

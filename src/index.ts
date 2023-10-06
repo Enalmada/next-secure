@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return */
+import * as nextSafe from 'next-safe';
+
 function deepMerge<T extends object, S extends object>(target: T, source: S): T & S {
   const output: any = Object.assign({}, target); // using any here to bypass type restrictions, handle with care
 
@@ -27,7 +30,8 @@ function isObject(item: any): boolean {
 }
 
 // default configuration https://trezy.gitbook.io/next-safe/usage/configuration
-export const Default = {
+
+export const Default: NextSafeConfig = {
   contentTypeOptions: 'nosniff',
   contentSecurityPolicy: {
     'base-uri': "'none'",
@@ -46,6 +50,10 @@ export const Default = {
     'script-src': "'self'",
     'style-src': "'self'",
     'worker-src': "'self'",
+    // @ts-ignore
+    'block-all-mixed-content': true,
+    // @ts-ignore
+    'upgrade-insecure-requests': true,
     mergeDefaultDirectives: false,
     reportOnly: false,
   },
@@ -75,6 +83,8 @@ export interface CspRule {
   'default-src'?: string | boolean;
   'form-action'?: string | boolean;
   'frame-ancestors'?: string | boolean;
+  'block-all-mixed-content'?: boolean;
+  'upgrade-insecure-requests'?: boolean;
 }
 
 export interface ContentSecurityPolicyTemplate {
@@ -90,6 +100,7 @@ export interface ContentSecurityPolicyTemplate {
   permissionsPolicyDirectiveSupport: any[];
   isDev: boolean;
 }
+
 function groupBySource(cspRules: CspRule[]): Record<string, CspRule[]> {
   const grouped: Record<string, CspRule[]> = {};
   cspRules.forEach((rule) => {
@@ -149,4 +160,32 @@ function generateCspTemplate(
   return finalConfigs;
 }
 
-export { generateCspTemplate };
+export type SourceHeaders = {
+  source: string;
+  headers: string;
+};
+
+// next-safe adds legacy keys that are unnecessary and cause console noise
+const defaultKeysToRemove = ['Feature-Policy', 'X-Content-Security-Policy', 'X-WebKit-CSP'];
+
+function generateCspTemplates(
+  cspConfig: ContentSecurityPolicyTemplate,
+  cspRules: CspRule[],
+  keysToRemove: string[] = defaultKeysToRemove
+) {
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules);
+
+  return contentSecurityPolicyTemplates.map((template: ContentSecurityPolicyTemplate) => {
+    return {
+      source: template.source || '/:path*',
+      // @ts-ignore
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      headers: nextSafe
+        // @ts-ignore
+        .default({ ...template })
+        .filter((header: { key: string }) => !keysToRemove.includes(header.key)) as Header[],
+    };
+  });
+}
+
+export { generateCspTemplates };
