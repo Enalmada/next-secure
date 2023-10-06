@@ -1,4 +1,5 @@
 // src/index.ts
+import * as nextSafe from "next-safe";
 var deepMerge = function(target, source) {
   const output = Object.assign({}, target);
   if (isObject(target) && isObject(source)) {
@@ -68,6 +69,15 @@ var generateCspTemplate = function(cspConfig, cspRules) {
   }
   return finalConfigs;
 };
+var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultKeysToRemove) {
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules);
+  return contentSecurityPolicyTemplates.map((template) => {
+    return {
+      source: template.source || "/:path*",
+      headers: nextSafe.default({ ...template }).filter((header) => !keysToRemove.includes(header.key))
+    };
+  });
+};
 var Default = {
   contentTypeOptions: "nosniff",
   contentSecurityPolicy: {
@@ -87,6 +97,8 @@ var Default = {
     "script-src": "'self'",
     "style-src": "'self'",
     "worker-src": "'self'",
+    "block-all-mixed-content": true,
+    "upgrade-insecure-requests": true,
     mergeDefaultDirectives: false,
     reportOnly: false
   },
@@ -96,7 +108,8 @@ var Default = {
   referrerPolicy: "no-referrer",
   xssProtection: "1; mode=block"
 };
+var defaultKeysToRemove = ["Feature-Policy", "X-Content-Security-Policy", "X-WebKit-CSP"];
 export {
-  generateCspTemplate,
+  generateCspTemplates,
   Default
 };
