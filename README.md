@@ -13,7 +13,7 @@ bun add @enalmada/next-secure
 
 ## Usage
 
-### In middleware
+### In middleware (dynamic)
 
 1) Define your rules.  See [next-safe](https://github.com/trezy/next-safe) for config values
 ```ts
@@ -63,6 +63,10 @@ export const cspRules: CspRule[] = [
 ];
 ```
 
+Notes:
+* static files will not have access to the nonce
+* source is not yet supported.  All rules are merged.
+
 2) use `generateSecurityHeaders` to create headers and `applyHeaders` to add them to response.
 ```ts
 
@@ -72,11 +76,11 @@ import { cspConfig, cspRules } from '@/cspRules';
 export async function middleware(request: NextRequest) {
   const secureHeaders = generateSecurityHeaders(cspConfig, cspRules);
   ...     
-  const result = NextResponse.next();  // or intlMiddleware(request); etc
-  return applyHeaders(result, secureHeaders);
+  const response = NextResponse.next();  // or intlMiddleware(request); etc
+  return applyHeaders(response, secureHeaders);
 ```
 
-### In next.config.cjs (deprecated)
+### In next.config.cjs (static)
 
 ```ts
 // next.config.mjs
