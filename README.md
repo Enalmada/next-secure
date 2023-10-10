@@ -75,6 +75,12 @@ import { cspConfig, cspRules } from '@/cspRules';
 
 export async function middleware(request: NextRequest) {
   const secureHeaders = generateSecurityHeaders(cspConfig, cspRules);
+  /*
+    const secureHeaders = generateSecurityHeaders(cspConfig, filteredCspRules, undefined, {
+    scriptNonce: false,  // if something out of your control uses inline scripts
+    styleNonce: false // if something out of your control uses inline styles
+    });
+ */
   ...     
   const response = NextResponse.next();  // or intlMiddleware(request); etc
   return applyHeaders(response, secureHeaders);

@@ -31,11 +31,11 @@ var groupBySource = function(cspRules, ignorePath = false) {
   });
   return grouped;
 };
-var generateCspTemplate = function(cspConfig, cspRules, nonce) {
-  const groupedRules = groupBySource(cspRules, !!nonce);
+var generateCspTemplate = function(cspConfig, cspRules, nonceConfig) {
+  const groupedRules = groupBySource(cspRules, !!nonceConfig?.nonce);
   const finalConfigs = [];
   for (const [source, rules] of Object.entries(groupedRules)) {
-    const finalConfig = deepMerge(getDefaultConfig(cspConfig.isDev, nonce), cspConfig);
+    const finalConfig = deepMerge(getDefaultConfig(cspConfig.isDev, nonceConfig), cspConfig);
     const generatedCsp = { ...finalConfig.contentSecurityPolicy };
     rules.forEach((rule) => {
       for (const [key, value] of Object.entries(rule)) {
@@ -69,8 +69,8 @@ var generateCspTemplate = function(cspConfig, cspRules, nonce) {
   }
   return finalConfigs;
 };
-var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonce) {
-  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonce);
+var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfig) {
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonceConfig);
   return contentSecurityPolicyTemplates.map((template) => {
     return {
       source: template.source || "/:path*",
@@ -78,13 +78,13 @@ var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultK
     };
   });
 };
-function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonce) {
-  if (!nonce) {
-    nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfig = { nonce: undefined, scriptNonce: true, styleNonce: true }) {
+  if (!nonceConfig.nonce) {
+    nonceConfig.nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   }
-  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonce);
+  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonceConfig);
   const headersFromTemplate = templates.shift()?.headers || [];
-  headersFromTemplate.push({ key: "x-nonce", value: nonce });
+  headersFromTemplate.push({ key: "x-nonce", value: nonceConfig.nonce });
   return headersFromTemplate;
 }
 function applyHeaders(response, headers) {
@@ -93,15 +93,16 @@ function applyHeaders(response, headers) {
   });
   return response;
 }
-var getDefaultConfig = (isDev, nonce) => {
+var getDefaultConfig = (isDev, nonceConfig) => {
   let scriptSrc = "'self'";
   let styleSrc = "'self'";
-  if (isDev) {
-    scriptSrc += " 'unsafe-inline'";
-    styleSrc += " 'unsafe-inline'";
-  } else if (nonce) {
-    scriptSrc += ` 'nonce-${nonce}' 'strict-dynamic'`;
-    styleSrc += ` 'nonce-${nonce}'`;
+  if (nonceConfig?.nonce) {
+    if (nonceConfig.scriptNonce) {
+      scriptSrc += ` 'nonce-${nonceConfig.nonce}' 'strict-dynamic'`;
+    }
+    if (nonceConfig.styleNonce) {
+      styleSrc += ` 'nonce-${nonceConfig.nonce}'`;
+    }
   }
   return {
     contentTypeOptions: "nosniff",
