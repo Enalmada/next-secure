@@ -51,7 +51,7 @@ describe('next.config header generation', () => {
           {
             key: 'Content-Security-Policy',
             value:
-              "base-uri 'none';child-src 'none';connect-src 'self' webpack://*;default-src 'self';font-src 'self';form-action 'self';frame-ancestors 'none';frame-src 'none';img-src 'self';manifest-src 'self';media-src 'self';object-src 'none';script-src 'self' 'unsafe-inline' http://testscript 'unsafe-eval';style-src 'self' 'unsafe-inline';worker-src 'self';",
+              "base-uri 'none';child-src 'none';connect-src 'self' webpack://*;default-src 'self';font-src 'self';form-action 'self';frame-ancestors 'none';frame-src 'none';img-src 'self';manifest-src 'self';media-src 'self';object-src 'none';script-src 'self' http://testscript 'unsafe-eval';style-src 'self' 'unsafe-inline';worker-src 'self';",
           },
           {
             key: 'Permissions-Policy',
@@ -138,13 +138,12 @@ describe('Middleware Generation', () => {
     ];
 
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-    const headers = generateSecurityHeaders(getCspConfig(true), cspRules, undefined, nonce);
+    const headers = generateSecurityHeaders(getCspConfig(true), cspRules, undefined, { nonce });
 
     const expectedHeaders = [
       {
         key: 'Content-Security-Policy',
-        value:
-          "base-uri 'none';child-src 'none';connect-src 'self' webpack://*;default-src 'self';font-src 'self';form-action 'self';frame-ancestors 'none';frame-src 'none';img-src 'self';manifest-src 'self';media-src 'self';object-src 'none';script-src 'self' 'unsafe-inline' http://testscript1 http://testscript2 'unsafe-eval';style-src 'self' 'unsafe-inline';worker-src 'self';",
+        value: `base-uri 'none';child-src 'none';connect-src 'self' webpack://*;default-src 'self';font-src 'self';form-action 'self';frame-ancestors 'none';frame-src 'none';img-src 'self';manifest-src 'self';media-src 'self';object-src 'none';script-src 'self' 'nonce-${nonce}' 'strict-dynamic' http://testscript1 http://testscript2 'unsafe-eval';style-src 'self' 'nonce-${nonce}' 'unsafe-inline';worker-src 'self';`,
       },
       {
         key: 'Permissions-Policy',
@@ -191,7 +190,7 @@ describe('Middleware Generation', () => {
     ];
 
     const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-    const headers = generateSecurityHeaders(getCspConfig(false), cspRules, undefined, nonce);
+    const headers = generateSecurityHeaders(getCspConfig(false), cspRules, undefined, { nonce });
 
     const expectedHeaders = [
       {

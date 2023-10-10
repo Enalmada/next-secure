@@ -32,18 +32,19 @@ function isObject(item: any): boolean {
 
 // default configuration https://trezy.gitbook.io/next-safe/usage/configuration
 
-type NextSafeConfigFunction = (isDev: boolean, nonce?: string) => NextSafeConfig;
+type NextSafeConfigFunction = (isDev: boolean, nonceConfig?: NonceConfig) => NextSafeConfig;
 
-const getDefaultConfig: NextSafeConfigFunction = (isDev, nonce) => {
+const getDefaultConfig: NextSafeConfigFunction = (isDev, nonceConfig) => {
   let scriptSrc = "'self'";
   let styleSrc = "'self'";
 
-  if (isDev) {
-    scriptSrc += " 'unsafe-inline'";
-    styleSrc += " 'unsafe-inline'";
-  } else if (nonce) {
-    scriptSrc += ` 'nonce-${nonce}' 'strict-dynamic'`;
-    styleSrc += ` 'nonce-${nonce}'`;
+  if (nonceConfig?.nonce) {
+    if (nonceConfig.scriptNonce) {
+      scriptSrc += ` 'nonce-${nonceConfig.nonce}' 'strict-dynamic'`;
+    }
+    if (nonceConfig.styleNonce) {
+      styleSrc += ` 'nonce-${nonceConfig.nonce}'`;
+    }
   }
 
   return {
@@ -131,14 +132,14 @@ function groupBySource(
 function generateCspTemplate(
   cspConfig: ContentSecurityPolicyTemplate,
   cspRules: CspRule[],
-  nonce?: string
+  nonceConfig?: NonceConfig
 ): ContentSecurityPolicyTemplate[] {
-  const groupedRules = groupBySource(cspRules, !!nonce);
+  const groupedRules = groupBySource(cspRules, !!nonceConfig?.nonce);
   const finalConfigs: ContentSecurityPolicyTemplate[] = [];
 
   for (const [source, rules] of Object.entries(groupedRules)) {
     const finalConfig: ContentSecurityPolicyTemplate = deepMerge(
-      getDefaultConfig(cspConfig.isDev, nonce),
+      getDefaultConfig(cspConfig.isDev, nonceConfig),
       cspConfig
     );
     const generatedCsp = { ...finalConfig.contentSecurityPolicy };
@@ -191,9 +192,9 @@ function generateCspTemplates(
   cspConfig: ContentSecurityPolicyTemplate,
   cspRules: CspRule[],
   keysToRemove: string[] = defaultKeysToRemove,
-  nonce?: string
+  nonceConfig?: NonceConfig
 ) {
-  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonce);
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonceConfig);
 
   return contentSecurityPolicyTemplates.map((template: ContentSecurityPolicyTemplate) => {
     return {
@@ -208,21 +209,39 @@ function generateCspTemplates(
   });
 }
 
+export type NonceConfig = {
+  nonce?: string;
+  scriptNonce?: boolean;
+  styleNonce?: boolean;
+};
+
 export function generateSecurityHeaders(
   cspConfig: ContentSecurityPolicyTemplate,
   cspRules: CspRule[],
   keysToRemove: string[] = defaultKeysToRemove,
-  nonce?: string
+  nonceConfigParam: Partial<NonceConfig> = {} // Use a Partial type and provide an empty default
 ): Header[] {
-  if (!nonce) {
-    nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const defaultNonceConfig: NonceConfig = {
+    nonce: undefined,
+    scriptNonce: true,
+    styleNonce: true,
+  };
+
+  // Merge the defaultNonceConfig with the passed-in nonceConfigParam
+  const nonceConfig: NonceConfig = {
+    ...defaultNonceConfig,
+    ...nonceConfigParam,
+  };
+
+  if (!nonceConfig.nonce) {
+    nonceConfig.nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   }
 
-  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonce);
+  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonceConfig);
 
   const headersFromTemplate = templates.shift()?.headers || [];
 
-  headersFromTemplate.push({ key: 'x-nonce', value: nonce });
+  headersFromTemplate.push({ key: 'x-nonce', value: nonceConfig.nonce });
 
   return headersFromTemplate;
 }

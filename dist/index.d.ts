@@ -38,10 +38,15 @@ export type SourceHeaders = {
     source: string;
     headers: string;
 };
-declare function generateCspTemplates(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonce?: string): {
+declare function generateCspTemplates(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonceConfig?: NonceConfig): {
     source: string;
     headers: Header[];
 }[];
-export declare function generateSecurityHeaders(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonce?: string): Header[];
+export type NonceConfig = {
+    nonce?: string;
+    scriptNonce?: boolean;
+    styleNonce?: boolean;
+};
+export declare function generateSecurityHeaders(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonceConfig?: NonceConfig): Header[];
 export declare function applyHeaders(response: NextResponse, headers: Header[]): NextResponse;
 export { generateCspTemplates };
