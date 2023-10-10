@@ -1,6 +1,6 @@
 {
   "name": "@enalmada/next-secure",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "build": "rm -rf dist && bun build.mjs && bun run build:declaration",
     "build:declaration": "tsc --emitDeclarationOnly",

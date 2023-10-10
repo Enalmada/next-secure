@@ -1,5 +1,11 @@
 # @enalmada/next-secure
 
+## 0.2.1
+
+### Patch Changes
+
+- d915ff2: nonce configurable for script and style
+
 ## 0.2.0
 
 ### Minor Changes
