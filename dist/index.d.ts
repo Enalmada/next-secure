@@ -47,6 +47,6 @@ export type NonceConfig = {
     scriptNonce?: boolean;
     styleNonce?: boolean;
 };
-export declare function generateSecurityHeaders(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonceConfig?: NonceConfig): Header[];
+export declare function generateSecurityHeaders(cspConfig: ContentSecurityPolicyTemplate, cspRules: CspRule[], keysToRemove?: string[], nonceConfigParam?: Partial<NonceConfig>): Header[];
 export declare function applyHeaders(response: NextResponse, headers: Header[]): NextResponse;
 export { generateCspTemplates };
