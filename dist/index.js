@@ -78,7 +78,16 @@ var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultK
     };
   });
 };
-function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfig = { nonce: undefined, scriptNonce: true, styleNonce: true }) {
+function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfigParam = {}) {
+  const defaultNonceConfig = {
+    nonce: undefined,
+    scriptNonce: true,
+    styleNonce: true
+  };
+  const nonceConfig = {
+    ...defaultNonceConfig,
+    ...nonceConfigParam
+  };
   if (!nonceConfig.nonce) {
     nonceConfig.nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   }
