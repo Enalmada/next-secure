@@ -30,12 +30,13 @@
     "fixpack": "^4.0.0",
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
+    "next": "^13.5.5",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
   },
   "peerDependencies": {
-    "next": "^13.5.4"
+    "next": "^13.5.5"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
