@@ -1,5 +1,11 @@
 # @enalmada/next-secure
 
+## 0.2.2
+
+### Patch Changes
+
+- 10f2e47: next dependency update
+
 ## 0.2.1
 
 ### Patch Changes
