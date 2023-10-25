@@ -7,9 +7,20 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened]  
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
   tests:
-    uses: enalmada/.github/.github/workflows/run-tests.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Shared Test Workflow
+        id: shared-tests
+        uses: enalmada/.github/.github/workflows/run-tests.yml@main
+      
+      - name: Check Shared Workflow Completion
+        run: |
+          if [ "${{ steps.shared-tests.outputs.test-status }}" != "success" ]; then
+            echo "Shared workflow tests failed. Halting further actions."
+            exit 1
+          fi
