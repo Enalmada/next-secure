@@ -10,5 +10,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
-    uses: enalmada/.github/.github/workflows/run-tests.yml@main
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - run: bun run test:unit
