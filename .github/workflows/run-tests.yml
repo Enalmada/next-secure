@@ -12,15 +12,6 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call Shared Test Workflow
-        id: shared-tests
-        uses: enalmada/.github/.github/workflows/run-tests.yml@main
-      
-      - name: Check Shared Workflow Completion
-        run: |
-          if [ "${{ steps.shared-tests.outputs.test-status }}" != "success" ]; then
-            echo "Shared workflow tests failed. Halting further actions."
-            exit 1
-          fi
+    uses: enalmada/.github/.github/workflows/run-tests.yml@main
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
