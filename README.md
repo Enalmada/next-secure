@@ -5,7 +5,7 @@
 * abstract out some security best practices that can be shared with multiple projects
 
 ## Getting Started
-Read the [documentation]([https://next-secure-xxx.vercel.app/](https://next-secure-nine.vercel.app/guides/getting-started/))
+Read the [documentation](https://next-secure-nine.vercel.app/guides/getting-started/)
 
 ## TODO
 [ ] review [with-csp](https://nextjs.org/docs/pages/building-your-application/configuring/content-security-policy) and use in middleware vs next.config.mjs
