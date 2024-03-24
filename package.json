@@ -33,7 +33,7 @@
     "fixpack": "4.0.0",
     "husky": "9.0.9",
     "lint-staged": "15.2.2",
-    "next": "14.1.1",
+    "next": "14.1.4",
     "prettier": "3.2.5",
     "typescript": "5.4.3",
     "vitest": "1.1.0"
