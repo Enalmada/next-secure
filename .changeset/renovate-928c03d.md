@@ -1,0 +1,5 @@
+---
+'@enalmada/next-secure': patch
+---
+
+Updated dependency `vitest` to `2.1.3`.
