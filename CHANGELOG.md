@@ -1,5 +1,12 @@
 # @enalmada/next-secure
 
+## 0.2.4
+
+### Patch Changes
+
+- 6069017: upgrade to next-secure 3.5.0
+- 6069017: migrate from eslint to biome
+
 ## 0.2.3
 
 ### Patch Changes
