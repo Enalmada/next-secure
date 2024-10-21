@@ -1,6 +1,6 @@
 // src/index.ts
 import * as nextSafe from "next-safe";
-var deepMerge = function(target, source) {
+function deepMerge(target, source) {
   const output = Object.assign({}, target);
   if (isObject(target) && isObject(source)) {
     Object.keys(source).forEach((key) => {
@@ -16,91 +16,9 @@ var deepMerge = function(target, source) {
     });
   }
   return output;
-};
-var isObject = function(item) {
-  return item && typeof item === "object" && !Array.isArray(item);
-};
-var groupBySource = function(cspRules, ignorePath = false) {
-  const grouped = {};
-  cspRules.forEach((rule) => {
-    const source = ignorePath ? "/" : rule.source || "/";
-    if (!grouped[source]) {
-      grouped[source] = [];
-    }
-    grouped[source].push(rule);
-  });
-  return grouped;
-};
-var generateCspTemplate = function(cspConfig, cspRules, nonceConfig) {
-  const groupedRules = groupBySource(cspRules, !!nonceConfig?.nonce);
-  const finalConfigs = [];
-  for (const [source, rules] of Object.entries(groupedRules)) {
-    const finalConfig = deepMerge(getDefaultConfig(cspConfig.isDev, nonceConfig), cspConfig);
-    const generatedCsp = { ...finalConfig.contentSecurityPolicy };
-    rules.forEach((rule) => {
-      for (const [key, value] of Object.entries(rule)) {
-        if (key !== "source") {
-          const cspKey = key;
-          if (typeof value === "boolean") {
-            generatedCsp[cspKey] = value;
-          } else {
-            if (generatedCsp[cspKey] === "'none'") {
-              generatedCsp[cspKey] = value;
-            } else {
-              generatedCsp[cspKey] += " " + value;
-            }
-          }
-        }
-      }
-    });
-    for (const [key, value] of Object.entries(generatedCsp)) {
-      if (typeof value === "string") {
-        generatedCsp[key] = value.trim();
-      }
-    }
-    finalConfigs.push({
-      source,
-      ...finalConfig,
-      contentSecurityPolicy: {
-        ...finalConfig.contentSecurityPolicy,
-        ...generatedCsp
-      }
-    });
-  }
-  return finalConfigs;
-};
-var generateCspTemplates = function(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfig) {
-  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonceConfig);
-  return contentSecurityPolicyTemplates.map((template) => {
-    return {
-      source: template.source || "/:path*",
-      headers: nextSafe.default({ ...template }).filter((header) => !keysToRemove.includes(header.key))
-    };
-  });
-};
-function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfigParam = {}) {
-  const defaultNonceConfig = {
-    nonce: undefined,
-    scriptNonce: true,
-    styleNonce: true
-  };
-  const nonceConfig = {
-    ...defaultNonceConfig,
-    ...nonceConfigParam
-  };
-  if (!nonceConfig.nonce) {
-    nonceConfig.nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  }
-  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonceConfig);
-  const headersFromTemplate = templates.shift()?.headers || [];
-  headersFromTemplate.push({ key: "x-nonce", value: nonceConfig.nonce });
-  return headersFromTemplate;
 }
-function applyHeaders(response, headers) {
-  headers.forEach((header) => {
-    response.headers.set(header.key, header.value);
-  });
-  return response;
+function isObject(item) {
+  return item && typeof item === "object" && !Array.isArray(item);
 }
 var getDefaultConfig = (isDev, nonceConfig) => {
   let scriptSrc = "'self'";
@@ -142,7 +60,93 @@ var getDefaultConfig = (isDev, nonceConfig) => {
     xssProtection: "1; mode=block"
   };
 };
-var defaultKeysToRemove = ["Feature-Policy", "X-Content-Security-Policy", "X-WebKit-CSP"];
+function groupBySource(cspRules, ignorePath = false) {
+  const grouped = {};
+  cspRules.forEach((rule) => {
+    const source = ignorePath ? "/" : rule.source || "/";
+    if (!grouped[source]) {
+      grouped[source] = [];
+    }
+    grouped[source].push(rule);
+  });
+  return grouped;
+}
+function generateCspTemplate(cspConfig, cspRules, nonceConfig) {
+  const groupedRules = groupBySource(cspRules, !!nonceConfig?.nonce);
+  const finalConfigs = [];
+  for (const [source, rules] of Object.entries(groupedRules)) {
+    const finalConfig = deepMerge(getDefaultConfig(cspConfig.isDev, nonceConfig), cspConfig);
+    const generatedCsp = { ...finalConfig.contentSecurityPolicy };
+    rules.forEach((rule) => {
+      for (const [key, value] of Object.entries(rule)) {
+        if (key !== "source") {
+          const cspKey = key;
+          if (typeof value === "boolean") {
+            generatedCsp[cspKey] = value;
+          } else {
+            if (generatedCsp[cspKey] === "'none'") {
+              generatedCsp[cspKey] = value;
+            } else {
+              generatedCsp[cspKey] += ` ${value}`;
+            }
+          }
+        }
+      }
+    });
+    for (const [key, value] of Object.entries(generatedCsp)) {
+      if (typeof value === "string") {
+        generatedCsp[key] = value.trim();
+      }
+    }
+    finalConfigs.push({
+      source,
+      ...finalConfig,
+      contentSecurityPolicy: {
+        ...finalConfig.contentSecurityPolicy,
+        ...generatedCsp
+      }
+    });
+  }
+  return finalConfigs;
+}
+var defaultKeysToRemove = [
+  "Feature-Policy",
+  "X-Content-Security-Policy",
+  "X-WebKit-CSP"
+];
+function generateCspTemplates(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfig) {
+  const contentSecurityPolicyTemplates = generateCspTemplate(cspConfig, cspRules, nonceConfig);
+  return contentSecurityPolicyTemplates.map((template) => {
+    return {
+      source: template.source || "/:path*",
+      headers: nextSafe.default({ ...template }).filter((header) => !keysToRemove.includes(header.key))
+    };
+  });
+}
+function generateSecurityHeaders(cspConfig, cspRules, keysToRemove = defaultKeysToRemove, nonceConfigParam = {}) {
+  const defaultNonceConfig = {
+    nonce: undefined,
+    scriptNonce: true,
+    styleNonce: true
+  };
+  const nonceConfig = {
+    ...defaultNonceConfig,
+    ...nonceConfigParam
+  };
+  if (!nonceConfig.nonce) {
+    nonceConfig.nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  }
+  const templates = generateCspTemplates(cspConfig, cspRules, keysToRemove, nonceConfig);
+  const headersFromTemplate = templates.shift()?.headers || [];
+  headersFromTemplate.push({ key: "x-nonce", value: nonceConfig.nonce });
+  return headersFromTemplate;
+}
+function applyHeaders(response, headers) {
+  headers.forEach((header) => {
+    response.headers.set(header.key, header.value);
+  });
+  return response;
+}
 export {
   generateSecurityHeaders,
   generateCspTemplates,
